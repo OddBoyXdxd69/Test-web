@@ -32,3 +32,13 @@ tasks.jar {
         attributes["Main-Class"] = "com.invmc.colorwheel.ColorWheelPlugin"
     }
 }
+
+tasks.processResources {
+    filesMatching("plugin.yml") {
+        expand(
+            "version" to project.version,
+            "name" to project.name,
+            "owner" to "OddBoyXD"
+        )
+    }
+}
