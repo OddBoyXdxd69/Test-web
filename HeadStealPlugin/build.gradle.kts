@@ -17,10 +17,17 @@ repositories {
         name = "papermc"
         url = uri("https://repo.papermc.io/repository/maven-public/")
     }
+    maven {
+        name = "vault"
+        url = uri("https://jitpack.io")
+    }
 }
 
 dependencies {
     compileOnly("io.papermc.paper:paper-api:1.21.9-R0.1-SNAPSHOT")
+    compileOnly("com.github.MilkBowl:VaultAPI:1.7") {
+        exclude(group = "org.bukkit", module = "bukkit")
+    }
 }
 
 tasks.withType<JavaCompile> {
@@ -29,16 +36,6 @@ tasks.withType<JavaCompile> {
 
 tasks.jar {
     manifest {
-        attributes["Main-Class"] = "com.invmc.colorwheel.ColorWheelPlugin"
-    }
-}
-
-tasks.processResources {
-    filesMatching("plugin.yml") {
-        expand(
-            "version" to project.version,
-            "name" to project.name,
-            "owner" to "OddBoyXD"
-        )
+        attributes["Main-Class"] = "com.invmc.headsteal.HeadStealPlugin"
     }
 }

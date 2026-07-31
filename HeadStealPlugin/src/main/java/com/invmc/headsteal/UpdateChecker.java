@@ -1,4 +1,4 @@
-package com.invmc.colorwheel;
+package com.invmc.headsteal;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -14,13 +14,13 @@ import java.util.logging.Level;
 
 public class UpdateChecker {
 
-    private final ColorWheelPlugin plugin;
+    private final HeadStealPlugin plugin;
     private final String repository;
     private final String currentVersion;
     private BukkitTask checkTask;
     private boolean isChecking = false;
 
-    public UpdateChecker(ColorWheelPlugin plugin, String repository, String currentVersion) {
+    public UpdateChecker(HeadStealPlugin plugin, String repository, String currentVersion) {
         this.plugin = plugin;
         this.repository = repository;
         this.currentVersion = currentVersion;
@@ -36,7 +36,7 @@ public class UpdateChecker {
         Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
             try {
                 String latestVersion = getLatestVersion();
-                
+
                 if (latestVersion != null) {
                     compareVersions(latestVersion, notifyConsole);
                 }
@@ -53,16 +53,15 @@ public class UpdateChecker {
     private String getLatestVersion() throws Exception {
         URL url = new URL("https://api.github.com/repos/" + repository + "/releases/latest");
         HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-        connection.setRequestProperty("User-Agent", "ColorWheelPlugin/" + currentVersion);
+        connection.setRequestProperty("User-Agent", "HeadStealPlugin/" + currentVersion);
         connection.setRequestProperty("Accept", "application/vnd.github.v3+json");
-        
+
         int responseCode = connection.getResponseCode();
-        
+
         if (responseCode == HttpURLConnection.HTTP_FORBIDDEN) {
-            // Rate limited, try alternative endpoint
             return getLatestVersionFromTags();
         }
-        
+
         if (responseCode != HttpURLConnection.HTTP_OK) {
             return null;
         }
@@ -70,7 +69,7 @@ public class UpdateChecker {
         BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
         StringBuilder response = new StringBuilder();
         String line;
-        
+
         while ((line = reader.readLine()) != null) {
             response.append(line);
         }
@@ -83,9 +82,9 @@ public class UpdateChecker {
     private String getLatestVersionFromTags() throws Exception {
         URL url = new URL("https://api.github.com/repos/" + repository + "/tags");
         HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-        connection.setRequestProperty("User-Agent", "ColorWheelPlugin/" + currentVersion);
+        connection.setRequestProperty("User-Agent", "HeadStealPlugin/" + currentVersion);
         connection.setRequestProperty("Accept", "application/vnd.github.v3+json");
-        
+
         if (connection.getResponseCode() != HttpURLConnection.HTTP_OK) {
             return null;
         }
@@ -93,7 +92,7 @@ public class UpdateChecker {
         BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
         StringBuilder response = new StringBuilder();
         String line;
-        
+
         while ((line = reader.readLine()) != null) {
             response.append(line);
         }
@@ -103,14 +102,14 @@ public class UpdateChecker {
         if (jsonArray.size() > 0) {
             return jsonArray.get(0).getAsJsonObject().get("name").getAsString();
         }
-        
+
         return null;
     }
 
     private void compareVersions(String latestVersion, boolean notifyConsole) {
         if (isVersionOlder(currentVersion, latestVersion)) {
             String updateMessage = """
-                
+
                 ╔═══════════════════════════════════════════════════╗
                 ║          🔄 UPDATE AVAILABLE!                      ║
                 ╠═══════════════════════════════════════════════════╣
@@ -129,13 +128,12 @@ public class UpdateChecker {
                 plugin.getLogger().info(updateMessage);
             }
 
-            // Notify online admins
             new BukkitRunnable() {
                 @Override
                 public void run() {
                     for (var player : plugin.getServer().getOnlinePlayers()) {
-                        if (player.hasPermission("colorwheel.update")) {
-                            player.sendMessage("§6§l[ColorWheel] §eA new version is available! (§f" + latestVersion + "§e)");
+                        if (player.hasPermission("headsteal.update")) {
+                            player.sendMessage("§6§l[HeadSteal] §eA new version is available! (§f" + latestVersion + "§e)");
                             player.sendMessage("§7Download: §bhttps://github.com/" + repository + "/releases");
                         }
                     }
@@ -153,14 +151,14 @@ public class UpdateChecker {
         try {
             String currentClean = current.replace("v", "").replace("V", "");
             String latestClean = latest.replace("v", "").replace("V", "");
-            
+
             String[] currentParts = currentClean.split("\\.");
             String[] latestParts = latestClean.split("\\.");
-            
+
             for (int i = 0; i < Math.max(currentParts.length, latestParts.length); i++) {
                 int currentNum = i < currentParts.length ? Integer.parseInt(currentParts[i]) : 0;
                 int latestNum = i < latestParts.length ? Integer.parseInt(latestParts[i]) : 0;
-                
+
                 if (latestNum > currentNum) {
                     return true;
                 }
@@ -168,7 +166,7 @@ public class UpdateChecker {
                     return false;
                 }
             }
-            
+
             return false;
         } catch (Exception e) {
             plugin.getLogger().log(Level.WARNING, "Error comparing versions", e);
