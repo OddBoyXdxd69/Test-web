@@ -1,0 +1,69 @@
+# ColorWheelPlugin Configuration
+
+# Game Settings
+game:
+  # Time between games in seconds (default: 120 = 2 minutes)
+  interval: 120
+  
+  # Countdown duration in seconds
+  countdown: 10
+  
+  # Enable automatic game start
+  auto-start: true
+
+# Messages
+messages:
+  prefix: "&6&lColorWheel &r&8» &r"
+  game-start: "&6&lCOLOR WHEEL &7- Get ready!"
+  countdown: "&eStand on %color% Block! &7(%seconds%s)"
+  time-up: "&cTIME'S UP!"
+  winner: "&a✓ %player% stood on the %color% block!"
+  loser: "&c✗ %player% failed to stand on the %color% block!"
+  next-game: "&7Next Color Wheel game in &e2 minutes&7."
+
+# Colors (default wool blocks)
+colors:
+  - name: "RED"
+    material: "RED_WOOL"
+    display: "Red"
+  - name: "BLUE"
+    material: "BLUE_WOOL"
+    display: "Blue"
+  - name: "GREEN"
+    material: "LIME_WOOL"
+    display: "Green"
+  - name: "YELLOW"
+    material: "YELLOW_WOOL"
+    display: "Yellow"
+  - name: "ORANGE"
+    material: "ORANGE_WOOL"
+    display: "Orange"
+  - name: "PURPLE"
+    material: "PURPLE_WOOL"
+    display: "Purple"
+  - name: "CYAN"
+    material: "CYAN_WOOL"
+    display: "Cyan"
+  - name: "PINK"
+    material: "PINK_WOOL"
+    display: "Pink"
+
+# World Settings
+worlds:
+  # Enable in specific worlds only (leave empty for all worlds)
+  enabled-worlds: []
+  
+  # Disabled worlds
+  disabled-worlds:
+    - "world_nether"
+    - "world_the_end"
+
+# Rewards
+rewards:
+  # Enable rewards for winners
+  enabled: true
+  
+  # Commands to execute for winners
+  commands:
+    - "eco give %player% 100"
+    - "broadcast %player% won the Color Wheel game!"

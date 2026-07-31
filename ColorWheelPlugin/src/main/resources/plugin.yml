@@ -1,0 +1,21 @@
+name: ColorWheelPlugin
+version: 1.0.0
+main: com.invmc.colorwheel.ColorWheelPlugin
+api-version: '1.21'
+description: A plugin that runs a color wheel game every 2 minutes
+author: OddBoyXD
+website: https://invmc.in
+
+commands:
+  colorwheel:
+    description: Color wheel game commands
+    usage: /<command> [start|stop|force|info]
+    permission: colorwheel.admin
+
+permissions:
+  colorwheel.admin:
+    description: Admin access to color wheel commands
+    default: op
+  colorwheel.play:
+    description: Ability to participate in color wheel games
+    default: true
