@@ -99,6 +99,46 @@ async function searchNode(node, query) {
 }
 
 // ---------------------------------------------------------------
+// Health cache + latency-aware routing
+// ---------------------------------------------------------------
+const nodeHealth = new Map(); // id -> { ping, status, at }
+const HEALTH_TTL = 15000;
+
+async function pingAndCache(node) {
+  const result = await pingNode(node);
+  nodeHealth.set(node.id, {
+    ping: result.ping,
+    status: result.status,
+    at: Date.now(),
+  });
+  return result;
+}
+
+async function refreshHealth() {
+  const results = await Promise.all(NODES.map(pingNode));
+  for (const r of results) {
+    nodeHealth.set(r.id, { ping: r.ping, status: r.status, at: Date.now() });
+  }
+  return results;
+}
+
+// Re-ping every 30s in the background so routing always uses fresh data
+refreshHealth().catch(() => undefined);
+setInterval(() => refreshHealth().catch(() => undefined), 30000);
+
+function getHealthyOrder() {
+  const now = Date.now();
+  return [...NODES].sort((a, b) => {
+    const ha = nodeHealth.get(a.id);
+    const hb = nodeHealth.get(b.id);
+    const ga = ha && ha.status === "online" && now - ha.at < HEALTH_TTL * 4 ? ha.ping : Infinity;
+    const gb = hb && hb.status === "online" && now - hb.at < HEALTH_TTL * 4 ? hb.ping : Infinity;
+    if (ga === Infinity && gb === Infinity) return 0;
+    return ga - gb;
+  });
+}
+
+// ---------------------------------------------------------------
 // yt-dlp stream resolution
 // ---------------------------------------------------------------
 const urlCache = new Map();
@@ -171,7 +211,7 @@ function proxyStream(req, res, upstreamUrl) {
 // Routes
 // ---------------------------------------------------------------
 app.get("/api/health", async (_req, res) => {
-  const results = await Promise.all(NODES.map(pingNode));
+  const results = await refreshHealth();
   res.json({ nodes: results, timestamp: Date.now() });
 });
 
@@ -179,7 +219,11 @@ app.get("/api/ping", async (req, res) => {
   const id = req.query.node;
   const node = NODES.find((n) => n.id === id);
   if (!node) return res.status(400).json({ error: "unknown node" });
-  res.json(await pingNode(node));
+  const cached = nodeHealth.get(id);
+  if (cached && Date.now() - cached.at < HEALTH_TTL) {
+    return res.json({ id, ping: cached.ping, status: cached.status });
+  }
+  res.json(await pingAndCache(node));
 });
 
 app.get("/api/search", async (req, res) => {
@@ -187,19 +231,28 @@ app.get("/api/search", async (req, res) => {
   const forced = String(req.query.node || "");
   if (!q) return res.status(400).json({ error: "missing query" });
 
-  let order = [...NODES];
-  if (forced) order = [NODES.find((n) => n.id === forced), ...NODES.filter((n) => n.id !== forced)].filter(Boolean);
+  // Healthy-first ordering: fastest known node first, offline/slowest last.
+  let order = getHealthyOrder();
+  if (forced) order = [NODES.find((n) => n.id === forced), ...order.filter((n) => n.id !== forced)].filter(Boolean);
 
   let lastErr = null;
+  let attempts = [];
   for (const node of order) {
+    const startedAt = Date.now();
     try {
       const data = await searchNode(node, q);
+      nodeHealth.set(node.id, {
+        ping: Date.now() - startedAt,
+        status: "online",
+        at: Date.now(),
+      });
       return res.json({ node: node.id, result: data });
     } catch (e) {
       lastErr = e;
+      attempts.push(node.id);
     }
   }
-  res.status(502).json({ error: `All Lavalink nodes failed: ${lastErr?.message || "unknown"}` });
+  res.status(502).json({ error: `All Lavalink nodes failed (${attempts.join(", ")}): ${lastErr?.message || "unknown"}` });
 });
 
 app.get("/api/suggest", async (req, res) => {
